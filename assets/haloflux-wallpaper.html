@@ -836,14 +836,14 @@ body.hf-bottom-collapsed .hf-fold.bottom.spin img{
 
 <!-- ===== 大肥鱼形象区（真实立绘 · 睡眠/清醒双态）===== -->
 <style>
-#mascot{position:fixed;right:24px;bottom:24px;z-index:56;width:224px;pointer-events:none;
+#mascot{position:fixed;right:24px;bottom:calc(24px + var(--hf-taskbar,0px));z-index:56;width:clamp(150px, 12.5vmin, 320px);pointer-events:none;
   font:11px/1.4 ui-monospace,monospace}
 #mcard{position:relative;width:224px;height:238px;display:flex;align-items:flex-end;justify-content:center;
   border-radius:28px;overflow:hidden;
   background:radial-gradient(circle at 50% 34%,#ffffff 0%,#eaf5ff 55%,#d8ebfc 100%);
   box-shadow:0 14px 44px rgba(56,126,196,.24),0 0 0 1px rgba(158,204,242,.6) inset;
   transition:box-shadow .8s ease, transform .8s ease, background .8s ease}
-#wimg{width:200px;height:auto;max-height:224px;object-fit:contain;margin-bottom:6px;
+#wimg{width:100%;height:auto;max-height:clamp(150px, 12.5vmin, 320px);object-fit:contain;margin-bottom:6px;
   filter:drop-shadow(0 6px 14px rgba(40,110,180,.22));
   transition:filter .8s ease, opacity .3s ease;
   transform-origin:50% 92%;
@@ -2726,7 +2726,7 @@ body.hf-bottom-collapsed .hf-fold.bottom{
 
 <style>
 /* HF_TASKBAR_GUARD : 底部留出任务栏高度（默认 48px），面板与鲸鱼把手一起上移 */
-:root{ --hf-taskbar: 48px; }
+:root{ --hf-taskbar: 48px; }   /* 48px 只是兜底，页面加载后由脚本按实测值覆盖 */
 .app > section.panels{ bottom: var(--hf-taskbar) !important; }
 .hf-fold.bottom{ top: calc(100% - 152px - 40px - var(--hf-taskbar)) !important; bottom: auto !important; }
 body.hf-bottom-collapsed .hf-fold.bottom{
@@ -2777,6 +2777,21 @@ body.hf-bottom-collapsed .hf-fold.bottom{
       try { if (window.HF_FX_DRAW) window.HF_FX_DRAW(); } catch (e) {}
     }
   }, 1000);
+})();
+</script>
+
+<script>
+/* 自适应：任务栏高度按「视口高 - 屏幕工作区高」实测（DPI/自定义高度都成立） */
+(function () {
+  function upd() {
+    try {
+      var avail = (window.screen && window.screen.availHeight) || window.innerHeight;
+      var t = Math.round(window.innerHeight - avail);
+      if (t > 0 && t < 160) document.documentElement.style.setProperty('--hf-taskbar', t + 'px');
+    } catch (e) {}
+  }
+  upd();
+  window.addEventListener('resize', upd);
 })();
 </script>
 </body>

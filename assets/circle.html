@@ -19,7 +19,7 @@
     border:1px solid rgba(120,140,170,.25);padding:5px 8px;transition:opacity .4s}
   .chk b{display:block;font-size:8px;color:#7c8598;font-weight:600;margin-bottom:3px}
   .chk span{font-size:12px;color:#fff;font-weight:600;white-space:nowrap}
-  .hud{position:fixed;right:12px;bottom:10px;z-index:9;color:#5d6b7e;font:11px/1.6 ui-monospace,monospace;
+  .hud{position:fixed;right:12px;bottom:calc(10px + var(--hf-taskbar,0px));z-index:9;color:#5d6b7e;font:11px/1.6 ui-monospace,monospace;
     text-align:right;pointer-events:none;letter-spacing:.5px}
 </style>
 </head>
@@ -313,7 +313,7 @@ function resizeStage() {
   W = r.width; H = r.height;
   stage.width = W * DPR; stage.height = H * DPR;
   cx = W * 0.07; cy = H * 0.5;
-  R = Math.max(H * 0.78, W * 0.30);
+  R = Math.min(H * 0.78, W * 0.42);   /* 宽高同时约束：竖屏/窄屏不裁切 */
   RO = R + Math.max(90, Math.min(240, H * 0.3, W * 0.13)) * C.ringWidth;
   RMAX = Math.hypot(W - cx, H / 2) + 60;
   thV = Math.asin(Math.min(1, (H / 2 + 60) / R));
@@ -4364,6 +4364,21 @@ addEventListener('message', function (e) {
       try { if (window.HF_FX_DRAW) window.HF_FX_DRAW(); } catch (e) {}
     }
   }, 1000);
+})();
+</script>
+
+<script>
+/* 自适应：任务栏高度按「视口高 - 屏幕工作区高」实测（DPI/自定义高度都成立） */
+(function () {
+  function upd() {
+    try {
+      var avail = (window.screen && window.screen.availHeight) || window.innerHeight;
+      var t = Math.round(window.innerHeight - avail);
+      if (t > 0 && t < 160) document.documentElement.style.setProperty('--hf-taskbar', t + 'px');
+    } catch (e) {}
+  }
+  upd();
+  window.addEventListener('resize', upd);
 })();
 </script>
 </body>
