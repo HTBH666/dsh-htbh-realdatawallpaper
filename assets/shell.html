@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>HTBH · 大肥鱼</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0;
+    will-change: opacity, transform, filter; }
+  #stageGirl { z-index: 1; opacity: 1; }
+  #stageCircle { z-index: 2; opacity: 0; pointer-events: none; visibility: hidden;
+    transform: none; filter: none;
+    transition: opacity .5s cubic-bezier(.4,0,.2,1); }
+  /* 黑场遮罩：负责"渐隐到黑 → 从黑渐显" */
+  #veil { position: fixed; inset: 0; z-index: 9; background: #000; opacity: 0;
+    pointer-events: none !important; transition: opacity .85s cubic-bezier(.4,0,.2,1); }
+  /* 圆圈侧的收束感 */
+  body.show-circle #stageCircle { opacity: 1; pointer-events: auto; visibility: visible;
+    transform: none; filter: none; }
+  /* 退场：只压暗、别瞬间消失（黑幕同时开始，所以看不到跳变） */
+  body.leaving-circle #stageCircle { opacity: 1; transform: none;
+    filter: brightness(.4); }
+</style>
+</head>
+<body class="show-girl">
+  <iframe id="stageGirl" src="haloflux-wallpaper.html"></iframe>
+  <iframe id="stageCircle" src="circle.html"></iframe>
+  <div id="veil" style="opacity:0"></div>
+<script>
+(function () {
+  var body = document.body, busy = false, lockTimer = null;
+  var girl = document.getElementById('stageGirl');
+  var circle = document.getElementById('stageCircle');
+  var veil = document.getElementById('veil');
+
+  function lock(ms) {
+    busy = true;
+    clearTimeout(lockTimer);
+    lockTimer = setTimeout(function () { busy = false; }, ms);
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function veilTo(opaque, ms) {                 /* 黑幕显隐（CSS 过渡控制时长） */
+    veil.style.transition = 'opacity ' + ms + 'ms cubic-bezier(.4,0,.2,1)';
+    veil.style.opacity = opaque ? '1' : '0';
+    return sleep(ms);
+  }
+
+  function tell(win, msg) {
+    try { if (win) win.postMessage(msg, '*'); } catch (e) {}
+  }
+
+  /* 彻底停掉被隐藏页的渲染循环：一次只有一个页面在画 */
+  function pausePage(w){ try { w.hfPause && w.hfPause(); } catch (e) {} }
+  function resumePage(w){ try { w.hfResume && w.hfResume(); } catch (e) {} }
+
+  /* 去圆圈：鲸鱼娘沉入黑 → 黑屏里换场并复位圆圈页 → 黑幕退去露出纯黑 → 圆圈逐层渲染 */
+  function goCircle() {
+    if (busy) return;
+    lock(9000);
+    tell(circle.contentWindow, { htbt: 'resetLayers' });   /* 提前复位，换场后就是全黑 */
+    tell(girl.contentWindow, { htbt: 'music-pause' });     /* 离开大肥鱼：停它的音乐 */
+    veilTo(true, 1100).then(function () {                  /* ① 慢慢变黑 */
+      body.classList.remove('show-girl');
+      body.classList.add('show-circle');                   /* ② 黑屏期间换场（看不到切换） */
+      pausePage(girl.contentWindow);                       /* 鲸鱼娘停帧，把性能让给圆环 */
+      resumePage(circle.contentWindow);
+      tell(circle.contentWindow, { htbt: 'resetLayers' });
+      return sleep(360);                                   /* ③ 停在纯黑里一会儿 */
+    }).then(function () {
+      tell(circle.contentWindow, { htbt: 'playReveal' });   /* ④ 圆圈页开始逐层揭示 */
+      tell(circle.contentWindow, { htbt: 'music-play' });    /*    圆环页放它自己的歌单 */
+      return veilTo(false, 620);                            /*    黑幕退去，露出它的纯黑开场 */
+    }).then(function () {
+      return sleep(7100);                                   /* ⑤ 让揭示自己跑完 */
+    }).then(function () { busy = false; });
+  }
+
+  /* 回鲸鱼娘：圆圈先压暗（黑幕同时开始）→ 全黑后换场 → 鲸鱼娘渐显 */
+  function goGirl() {
+    if (busy) return;
+    lock(4200);
+    tell(circle.contentWindow, { htbt: 'music-pause' });   /* 离开圆环：停它的音乐 */
+    body.classList.add('leaving-circle');          /* ① 圆圈同时压暗 */
+    veilTo(true, 1200).then(function () {          /* ② 黑幕一起压上来（平滑，不闪） */
+      body.classList.remove('show-circle');
+      body.classList.remove('leaving-circle');
+      body.classList.add('show-girl');             /* ③ 全黑时换场 */
+      pausePage(circle.contentWindow);             /* 圆环停帧 */
+      resumePage(girl.contentWindow);
+      return sleep(380);
+    }).then(function () {
+      tell(girl.contentWindow, { htbt: 'music-play' });    /* ④ 大肥鱼页放它自己的歌单 */
+      veilTo(false, 1600);                         /* ④ 鲸鱼娘渐显 */
+      return sleep(1800);
+    }).then(function () { busy = false; });
+  }
+
+  /* 启动：默认显示鲸鱼娘，圆环页先停帧 */
+  function initPause() { pausePage(circle.contentWindow); }
+  addEventListener('load', function () { setTimeout(initPause, 400); setTimeout(initPause, 2000); });
+  setTimeout(initPause, 400); setTimeout(initPause, 2000);
+
+  addEventListener('message', function (e) {
+    var d = e.data || {};
+    if (d.htbt === 'toCircle') goCircle();
+    if (d.htbt === 'toGirl') goGirl();
+    /* 只有一个页面能出声：谁在放，另一个就淡出 */
+    if (d.htbt === 'music-claim') {
+      var other = (d.page === 'girl') ? circle : girl;
+      try { other.contentWindow.postMessage({ htbt: 'music-pause' }, '*'); } catch (err) {}
+    }
+  });
+  /* 键盘：→ 去圆环，← 回大肥鱼 */
+  addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') goCircle();
+    if (e.key === 'ArrowLeft') goGirl();
+  });
+})();
+</script>
+
+<style>
+/* 隐藏 ego 浏览器的代理光标覆盖层 */
+#ego-agent-cursor-overlay{ display:none !important; }
+</style>
+</body>
+</html>

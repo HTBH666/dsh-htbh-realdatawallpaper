@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+  canvas{display:block;background:transparent}
+  #tip{position:absolute;left:0;right:0;bottom:0;color:#889;font:9px monospace;text-align:center}
+</style></head>
+<body>
+<!-- 本地化的 Live2D（不再依赖 127.0.0.1:7788 的宠物服务）
+     素材：DS鳐奔·Live2D 模型（CC BY-NC-SA 4.0，见 live2d/MODEL-LICENSE.txt）
+     Cubism Core 为 Live2D Inc. 专有软件，仅本机使用 -->
+<script src="live2d/cubism-core.min.js"></script>
+<script src="live2d/vendor.js"></script>
+<script>
+(async function () {
+  var MODEL = 'live2d/model/c_0120.model3.json';
+  var V = window.__dshLive2dPetVendor;
+  if (!V) { document.body.innerHTML = '<div style="color:#889;font:10px monospace">vendor 未加载</div>'; return; }
+  try { V.configureCubismSDK({ memorySizeMB: 64 }); } catch (e) {}
+
+  var W = window.innerWidth || 200, H = window.innerHeight || 260;
+  var app = new V.Application();
+  var opts = { width: W, height: H, backgroundAlpha: 0, transparent: true,
+               antialias: true, autoDensity: true,
+               resolution: (window.devicePixelRatio || 1) };
+  if (app.init) { await app.init(opts); }
+  var view = app.canvas || app.view;
+  view.style.width = '100%'; view.style.height = '100%';
+  document.body.appendChild(view);
+
+  try {
+    var model = await V.Live2DModel.from(MODEL, { autoInteract: false });
+    app.stage.addChild(model);
+    var fit = Math.min(W / model.width, H / model.height);
+    model.scale.set(fit * 1.05);
+    model.anchor.set(0.5, 0.5);
+    model.x = W / 2; model.y = H / 2;
+
+    var mm = model.internalModel && model.internalModel.motionManager;
+    var groups = (mm && mm.definitions && Object.keys(mm.definitions)) || [];
+    if (groups.length && mm.startRandomMotion) {
+      mm.startRandomMotion(groups[0], 3);
+      setInterval(function () {
+        try { mm.startRandomMotion(groups[(Math.random() * groups.length) | 0], 3); } catch (e) {}
+      }, 6000);
+    }
+    var t0 = performance.now();
+    function tick() {
+      var t = (performance.now() - t0) / 1000;
+      model.y = H / 2 + Math.sin(t * 0.9) * 1.4;
+      model.rotation = Math.sin(t * 0.55) * 0.01;
+      requestAnimationFrame(tick);
+    }
+    tick();
+    window.__LIVE2D_OK = true;
+    window.__LIVE2D_SIZE = [model.width | 0, model.height | 0, groups.length];
+  } catch (e) {
+    window.__LIVE2D_ERR = String(e && e.message || e).slice(0, 160);
+    document.body.innerHTML = '<div style="color:#889;font:10px monospace;padding:4px">' +
+      window.__LIVE2D_ERR + '</div>';
+  }
+})();
+</script>
+</body></html>

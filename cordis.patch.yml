@@ -1,0 +1,6 @@
+# dsh-htbh-realdatawallpaper bundle patch
+# 壁纸插件：只读订阅 session/event，起本地 SSE 端口供壁纸页面取真实事件，
+# 并提供 /htbh 命令把壁纸装进 Lively Wallpaper。
+- insert:
+    - id: htbh-realdatawallpaper
+      name: dsh-htbh-realdatawallpaper

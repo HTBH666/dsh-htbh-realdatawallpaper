@@ -1,0 +1,27 @@
+{
+  "name": "dsh-htbh-realdatawallpaper",
+  "version": "1.0.0",
+  "description": "HTBH 实时数据壁纸：把 DSH 的 agent 运行事件投射成《星际穿越》风格圆环 + 大肥鱼桌面的动态壁纸，并一键装进 Lively Wallpaper。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "assets",
+    "LICENSES",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": ["dsh", "wallpaper", "lively", "live2d", "visualizer"],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
